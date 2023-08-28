@@ -93,3 +93,15 @@ public
 			}
 		}
 	}
+
+	void initialiseWorkers() {
+		for (int index = 0; index < populationSize; index++) {
+			Worker worker = workers[index];
+			worker.x = 0;
+			worker.y = 0;
+		}
+	}
+
+	void go() {
+		//todo
+	}
