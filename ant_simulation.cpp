@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+#include <random>
 
 const int maxTicks = 100;
 const int populationSize = 50;
@@ -40,20 +41,63 @@ public:
 	int x, y;
 	int colony;
 	bool hasFood;
+	float directionDegrees,
 
 
-	Worker(int startX, int startY, int fac, bool hf) : x(startX), y(startY), colony(fac), hasFood(hf) {}
+	Worker(int startX, int startY, int fac, bool hf) : x(startX), y(startY), colony(fac), hasFood(hf), directionDegrees(0.0) {}
 
 	void lookForFood(const std::vector<Patch>& patches) {
-		// todo
+		Patch& currentPatch = patches[x][y]; // Get the patch the ant is on
+
+		if (currentPatch.food > 0) {
+			hasFood = true;
+			currentPatch.food = 0;
+		}
+		else {
+			// No food on the patch, so the ant wiggles
+			wiggle();
+
+			// Move the ant one pixel in the direction they face
+			float deltaX = cos(direction) * 1.0; // Move 1 pixel in x direction
+			float deltaY = sin(direction) * 1.0; // Move 1 pixel in y direction
+
+			// Update ant's position while ensuring it stays within the display boundary
+			x = std::max(0, std::min(display_size - 1, x + static_cast<int>(deltaX)));
+			y = std::max(0, std::min(display_size - 1, y + static_cast<int>(deltaY)));
+		}
 	}
 
 	void returnToNest(const std::vector<Patch>& patches) {
-		// todo
+		Patch& currentPatch = patches[x][y];
+		if (currentPatch.nest) {
+			hasFood = false;
+		}
+		else {
+
+		}
 	}
 
 	void wiggle() {
-		// todo
+		// Generate a random angle change between -20 and 20 degrees
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_real_distribution<float> dis(-20.0, 20.0);
+		float randomAngleChange = dis(gen);
+
+		// Update the direction based on the random angle change
+		updateDirection(randomAngleChange);
+	}
+
+	// Update direction based on a change in angle (degrees)
+	void updateDirection(float deltaAngleDegrees) {
+		directionDegrees += deltaAngleDegrees;
+		// Ensure direction stays within 0 to 360 degrees
+		if (directionDegrees >= 360.0) {
+			directionDegrees -= 360.0;
+		}
+		else if (directionDegrees < 0.0) {
+			directionDegrees += 360.0;
+		}
 	}
 };
 
