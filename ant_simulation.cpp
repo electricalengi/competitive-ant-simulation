@@ -5,7 +5,7 @@
 #include <ctime>
 #include <random>
 
-const int maxTicks = 1;
+const int maxTicks = 100;
 const int populationSize = 50;
 const int display_size = 100;
 
@@ -48,7 +48,7 @@ public:
 	float direction;
 
 
-	explicit Worker(int startX = display_size/2, int startY = display_size/2, int fac = 0, bool hf = false, float d = 0.0) : x(startX), y(startY), colony(fac), hasFood(hf), direction(d) {}
+	explicit Worker(int startX = display_size/2, int startY = display_size/2, int fac = 0, bool hf = false, float d = 270.0) : x(startX), y(startY), colony(fac), hasFood(hf), direction(d) {}
 
 	void lookForFood(Patch patches[][display_size]) {
 		Patch& currentPatch = patches[x][y]; // Get the patch the ant is on
@@ -61,13 +61,16 @@ public:
 			// No food on the patch, so the ant wiggles
 			wiggle();
 
-			// Move the ant one pixel in the direction they face
-			float deltaX = cos(direction) * 1.0; // Move 1 pixel in x direction
-			float deltaY = sin(direction) * 1.0; // Move 1 pixel in y direction
+			//Move the ant one pixel in the direction they face
+			float deltaX = cos(direction * (M_PI / 180.0)) * 1.0; // Move 1 pixel in x direction
+			float deltaY = sin(direction * (M_PI / 180.0)) * 1.0; // Move 1 pixel in y direction
 
 			// Update ant's position while ensuring it stays within the display boundary
-			x = std::max(0, std::min(display_size - 1, x + static_cast<int>(deltaX)));
-			y = std::max(0, std::min(display_size - 1, y + static_cast<int>(deltaY)));
+			x = std::max(0, std::min(display_size - 1, x + static_cast<int>(std::round(deltaX))));
+			y = std::max(0, std::min(display_size - 1, y + static_cast<int>(std::round(deltaY))));
+
+            x = x + 1;
+            y = y + 1;
 		}
 	}
 
@@ -119,7 +122,7 @@ public:
 		// Generate a random angle change between -20 and 20 degrees
 		std::random_device rd;
 		std::mt19937 gen(rd());
-		std::uniform_real_distribution<float> dis(-20.0, 20.0);
+		std::uniform_real_distribution<float> dis(-45.0, 45.0);
 		float randomAngleChange = dis(gen);
 
 		// Update the direction based on the random angle change
@@ -239,6 +242,9 @@ public:
                         } else {
                             cout << 'W'; // Worker without food
                         }
+                        /*cout << " (Colony: " << worker.colony
+                             << ", Direction: " << worker.direction
+                             << ", Has Food: " << (worker.hasFood ? "true" : "false") << ")";*/
                         printed = true;
                         break;
                     }
