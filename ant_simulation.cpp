@@ -73,7 +73,41 @@ public:
 			hasFood = false;
 		}
 		else {
+			std::vector<Patch*> neighbours = getNeighbours(patches);
+			Patch* maxScentPatch = nullptr;
+			float maxScent = 0;
+			for (int neighbourIndex; neighbourIndex < neighbours.size(); neighbourIndex++) {
+				Patch* currentNeighbour = neighbours[neighbourIndex];
+				if (currentNeighbour->nestScent > maxScent) {
+					maxScentPatch = currentNeighbour;
+					maxScent = currentNeighbour->nestScent;
+				}	
+			}
+			if (maxScentPatch == nullptr) {
+				wiggle();
+				return;
+			}
+			else {
+				// Calculate the angle towards the patch with max scent
+				float deltaX = maxScentPatch->x - x;
+				float deltaY = maxScentPatch->y - y;
+				float targetAngle = std::atan2(deltaY, deltaX) * 180.0 / M_PI;
 
+				// Calculate the angle difference between the target angle and current direction
+				float angleDifference = targetAngle - directionDegrees;
+
+				// Update the direction based on the angle difference
+				updateDirection(angleDifference);
+
+				// Move the ant one pixel in the direction they face
+				float moveX = cos(directionDegrees * M_PI / 180.0) * 1.0;
+				float moveY = sin(directionDegrees * M_PI / 180.0) * 1.0;
+
+				// Update ant's position while ensuring it stays within the display boundary
+				x = std::max(0, std::min(display_size - 1, static_cast<int>(x + moveX)));
+				y = std::max(0, std::min(display_size - 1, static_cast<int>(y + moveY)));
+
+			}
 		}
 	}
 
@@ -98,6 +132,27 @@ public:
 		else if (directionDegrees < 0.0) {
 			directionDegrees += 360.0;
 		}
+	}
+
+	std::vector<Patch*> getNeighbours(std::vector<std::vector<Patch>>& patches) {
+		std::vector<Patch*> neighbours;
+
+		// Define the range of neighboring patches
+		int minRow = std::max(0, x - 1);
+		int maxRow = std::min(display_size - 1, x + 1);
+		int minCol = std::max(0, y - 1);
+		int maxCol = std::min(display_size - 1, y + 1);
+
+		// Iterate through the neighboring patch positions and add them to the list
+		for (int row = minRow; row <= maxRow; ++row) {
+			for (int col = minCol; col <= maxCol; ++col) {
+				if (row != x || col != y) {  // Exclude the current patch
+					neighbours.push_back(&patches[row][col]);
+				}
+			}
+		}
+
+		return neighbours;
 	}
 };
 
