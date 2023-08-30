@@ -5,7 +5,7 @@
 #include <ctime>
 #include <random>
 
-const int maxTicks = 100;
+const int maxTicks = 1;
 const int populationSize = 50;
 const int display_size = 100;
 
@@ -171,12 +171,12 @@ public:
 
 	int nest_x = display_size / 2;
 	int nest_y = display_size / 2;
-	int food_1_x = 100;
-	int food_1_y = 100;
+	int food_1_x = 75;
+	int food_1_y = 75;
 	
 
 	Simulation() {
-		initialiseWorkers();
+		//initialiseWorkers();
 		initialisePatches();
 	}
 
@@ -202,12 +202,9 @@ public:
 		}
 	}
 
-	void initialiseWorkers() {
-		for (auto & worker : workers) {
-				worker.x = 0;
-			worker.y = 0;
-		}
-	}
+	/*void initialiseWorkers() {
+		// nothing
+	}*/
 
 	void go() {
 		while (tick < maxTicks) {
@@ -220,49 +217,43 @@ public:
                     worker.lookForFood(patches);
                 }
 			}
-            ++tick;
+            tick++;
 		}
 	}
 
 
-    void printSimulationState(const Patch displayPatches[][display_size], const Worker displayWorkers[populationSize]) {
+    static void printSimulationState(const Patch displayPatches[][display_size], const Worker displayWorkers[populationSize]) {
         // Clear the screen (for visualization purposes)
-        system("clear || cls");
+        system("cls");
 
-        // Create a 2D grid to represent the simulation state
-        char grid[display_size][display_size];
-
-        // Initialize the grid with empty spaces
-        for (auto & x : grid) {
-            for (char & y : x) {
-                y = ' ';
-            }
-        }
-
-        // Place workers on the grid
-        for (const Worker &worker : workers) {
-            if (worker.hasFood) {
-                grid[worker.x][worker.y] = 'F'; // Worker with food
-            } else {
-                grid[worker.x][worker.y] = 'W'; // Worker without food
-            }
-        }
-
-        // Place patches on the grid
-        for (int x = 0; x < display_size; ++x) {
-            for (int y = 0; y < display_size; ++y) {
-                if (patches[x][y].nest) {
-                    grid[x][y] = 'N'; // Nest patch
-                } else if (patches[x][y].food > 0) {
-                    grid[x][y] = 'P'; // Food patch
-                }
-            }
-        }
-
-        // Print the grid
         for (int y = 0; y < display_size; ++y) {
-            for (auto & x : grid) {
-                cout << x[y];
+            for (int x = 0; x < display_size; ++x) {
+                bool printed = false;
+
+                // Check if any worker is at this position
+                for (int workerIndex = 0; workerIndex < populationSize; workerIndex ++) {
+                    Worker worker = displayWorkers[workerIndex];
+                    if (worker.x == x && worker.y == y) {
+                        if (worker.hasFood) {
+                            cout << 'F'; // Worker with food
+                        } else {
+                            cout << 'W'; // Worker without food
+                        }
+                        printed = true;
+                        break;
+                    }
+                }
+
+                if (!printed) {
+                    // Check if any patch is at this position
+                    if (displayPatches[x][y].nest) {
+                        cout << 'N'; // Nest patch
+                    } else if (displayPatches[x][y].food > 0) {
+                        cout << 'P'; // Food patch
+                    } else {
+                        cout << ' ';
+                    }
+                }
             }
             cout << endl;
         }
