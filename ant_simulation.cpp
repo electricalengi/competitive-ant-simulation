@@ -7,7 +7,9 @@
 
 const int maxTicks = 100;
 const int populationSize = 50;
-const int display_size = 512;
+const int display_size = 100;
+
+using namespace std;
 	
 class Patch {
 public:
@@ -16,37 +18,39 @@ public:
 	bool nest;
 	float nestScent;
 	int foodSourceNumber;
+    int x{};
+    int y{};
 
-	Patch(int c = 0, int f = 0, bool n = false, int s = 0, int fsn = 0) : chemical(c), food(f), nest(n), nestScent(s), foodSourceNumber(fsn) {}
+	explicit Patch(float c = 0, int f = 0, bool n = false, float s = 0, int fsn = 0) : chemical(c), food(f), nest(n), nestScent(s), foodSourceNumber(fsn) {}
 };
 
-class Soldier {
+/*class Soldier {
 public:
 	int x, y;
 	int colony;
 
 	Soldier(int startX, int startY, bool hf, int fac) : x(startX), y(startY), colony(fac) {}
-	
+
 	void lookForEnemy(const std::vector<Patch>& patches) {
 		// todo
 	}
-	
+
 	void wiggle() {
 		// todo
 	}
-};
+};*/
 
 class Worker {
 public:
 	int x, y;
 	int colony;
 	bool hasFood;
-	float direction,
+	float direction;
 
 
-	Worker(int startX, int startY, int fac, bool hf) : x(startX), y(startY), colony(fac), hasFood(hf), directionDegrees(0.0) {}
+	explicit Worker(int startX = display_size/2, int startY = display_size/2, int fac = 0, bool hf = false, float d = 0.0) : x(startX), y(startY), colony(fac), hasFood(hf), direction(d) {}
 
-	void lookForFood(const std::vector<Patch>& patches) {
+	void lookForFood(Patch patches[][display_size]) {
 		Patch& currentPatch = patches[x][y]; // Get the patch the ant is on
 
 		if (currentPatch.food > 0) {
@@ -67,7 +71,7 @@ public:
 		}
 	}
 
-	void returnToNest(const std::vector<Patch>& patches) {
+	void returnToNest(Patch patches[][display_size]) {
 		Patch& currentPatch = patches[x][y];
 		if (currentPatch.nest) {
 			hasFood = false;
@@ -94,14 +98,14 @@ public:
 				float targetAngle = std::atan2(deltaY, deltaX) * 180.0 / M_PI;
 
 				// Calculate the angle difference between the target angle and current direction
-				float angleDifference = targetAngle - directionDegrees;
+				float angleDifference = targetAngle - direction;
 
 				// Update the direction based on the angle difference
 				updateDirection(angleDifference);
 
 				// Move the ant one pixel in the direction they face
-				float moveX = cos(directionDegrees * M_PI / 180.0) * 1.0;
-				float moveY = sin(directionDegrees * M_PI / 180.0) * 1.0;
+				float moveX = cos(direction * M_PI / 180.0) * 1.0;
+				float moveY = sin(direction * M_PI / 180.0) * 1.0;
 
 				// Update ant's position while ensuring it stays within the display boundary
 				x = std::max(0, std::min(display_size - 1, static_cast<int>(x + moveX)));
@@ -134,7 +138,7 @@ public:
 		}
 	}
 
-	std::vector<Patch*> getNeighbours(std::vector<std::vector<Patch>>& patches) {
+	std::vector<Patch*> getNeighbours(Patch patches[][display_size]) const {
 		std::vector<Patch*> neighbours;
 
 		// Define the range of neighboring patches
@@ -160,13 +164,13 @@ public:
 
 class Simulation {
 public:
-		Worker workers[populationSize];
+    Worker workers[populationSize];
 	Patch patches[display_size][display_size];
 	int tick = 0;
 
 
-	int nestx = display_size / 2;
-	int nesty = display_size / 2;
+	int nest_x = display_size / 2;
+	int nest_y = display_size / 2;
 	int food_1_x = 100;
 	int food_1_y = 100;
 	
@@ -180,7 +184,7 @@ public:
 		for (int x = 0; x < display_size; x++) {
 			for (int y = 0; y < display_size; y++) {
 				Patch& patch = patches[x][y];
-				float distance_nest = pow(nestx - x, 2) + pow(nesty - y, 2);
+				float distance_nest = pow(nest_x - x, 2) + pow(nest_y - y, 2);
 				float distance_food = pow(food_1_x - x, 2) + pow(food_1_y - y, 2);
 
 				if (distance_food < 30) {
@@ -191,37 +195,79 @@ public:
 				if (distance_nest < 50) {
 					patch.nest = true;
 				}
-
+                patch.x = x;
+                patch.y = y;
 				patch.nestScent = 1 / distance_nest;
 			}
 		}
 	}
 
 	void initialiseWorkers() {
-		for (int index = 0; index < populationSize; index++) {
-			Worker& worker = workers[index];
-			worker.x = 0;
+		for (auto & worker : workers) {
+				worker.x = 0;
 			worker.y = 0;
 		}
 	}
 
 	void go() {
-		if (tick < maxTicks) {
-			for (int index = 0; index < populationSize; index++) {
-				Worker& worker = workers[index];
-				if (worker.hasFood) {
+		while (tick < maxTicks) {
+            printSimulationState(patches, workers);
+			for (auto & worker : workers) {
+                if (worker.hasFood) {
 					worker.returnToNest(patches);
 				}
-				else { worker.lookForFood(patches); }
+                else {
+                    worker.lookForFood(patches);
+                }
 			}
-			// Print worker's state and location
-			std::cout << "Tick " << tick << ", Worker " << index
-				<< " - Location: (" << worker.x << ", " << worker.y << ")"
-				<< ", Has Food: " << (worker.hasFood ? "Yes" : "No") << std::endl;
-			tick = tick + 1;
+            ++tick;
 		}
 	}
-}
+
+
+    void printSimulationState(const Patch displayPatches[][display_size], const Worker displayWorkers[populationSize]) {
+        // Clear the screen (for visualization purposes)
+        system("clear || cls");
+
+        // Create a 2D grid to represent the simulation state
+        char grid[display_size][display_size];
+
+        // Initialize the grid with empty spaces
+        for (auto & x : grid) {
+            for (char & y : x) {
+                y = ' ';
+            }
+        }
+
+        // Place workers on the grid
+        for (const Worker &worker : workers) {
+            if (worker.hasFood) {
+                grid[worker.x][worker.y] = 'F'; // Worker with food
+            } else {
+                grid[worker.x][worker.y] = 'W'; // Worker without food
+            }
+        }
+
+        // Place patches on the grid
+        for (int x = 0; x < display_size; ++x) {
+            for (int y = 0; y < display_size; ++y) {
+                if (patches[x][y].nest) {
+                    grid[x][y] = 'N'; // Nest patch
+                } else if (patches[x][y].food > 0) {
+                    grid[x][y] = 'P'; // Food patch
+                }
+            }
+        }
+
+        // Print the grid
+        for (int y = 0; y < display_size; ++y) {
+            for (auto & x : grid) {
+                cout << x[y];
+            }
+            cout << endl;
+        }
+    }
+};
 
 
 int main() {
