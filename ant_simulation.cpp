@@ -8,7 +8,7 @@
 const int maxTicks = 100;
 const int populationSize = 50;
 const int display_size = 512;
-
+	
 class Patch {
 public:
 	float chemical;
@@ -41,7 +41,7 @@ public:
 	int x, y;
 	int colony;
 	bool hasFood;
-	float directionDegrees,
+	float direction,
 
 
 	Worker(int startX, int startY, int fac, bool hf) : x(startX), y(startY), colony(fac), hasFood(hf), directionDegrees(0.0) {}
@@ -124,13 +124,13 @@ public:
 
 	// Update direction based on a change in angle (degrees)
 	void updateDirection(float deltaAngleDegrees) {
-		directionDegrees += deltaAngleDegrees;
+		direction += deltaAngleDegrees;
 		// Ensure direction stays within 0 to 360 degrees
-		if (directionDegrees >= 360.0) {
-			directionDegrees -= 360.0;
+		if (direction >= 360.0) {
+			direction -= 360.0;
 		}
-		else if (directionDegrees < 0.0) {
-			directionDegrees += 360.0;
+		else if (direction < 0.0) {
+			direction += 360.0;
 		}
 	}
 
@@ -214,7 +214,17 @@ public:
 				}
 				else { worker.lookForFood(patches); }
 			}
+			// Print worker's state and location
+			std::cout << "Tick " << tick << ", Worker " << index
+				<< " - Location: (" << worker.x << ", " << worker.y << ")"
+				<< ", Has Food: " << (worker.hasFood ? "Yes" : "No") << std::endl;
 			tick = tick + 1;
 		}
 	}
+}
+
+
+int main() {
+	Simulation sim;
+	sim.go();
 }
