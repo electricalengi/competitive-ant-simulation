@@ -9,6 +9,10 @@ const int maxTicks = 100;
 const int populationSize = 50;
 const int display_size = 100;
 
+std::random_device rd;
+std::mt19937 gen(rd());
+std::uniform_real_distribution<float> dis(-45.0, 45.0);
+
 using namespace std;
 	
 class Patch {
@@ -69,8 +73,7 @@ public:
 			x = std::max(0, std::min(display_size - 1, x + static_cast<int>(std::round(deltaX))));
 			y = std::max(0, std::min(display_size - 1, y + static_cast<int>(std::round(deltaY))));
 
-            x = x + 1;
-            y = y + 1;
+
 		}
 	}
 
@@ -83,14 +86,14 @@ public:
 			std::vector<Patch*> neighbours = getNeighbours(patches);
 			Patch* maxScentPatch = nullptr;
 			float maxScent = 0;
-			for (int neighbourIndex; neighbourIndex < neighbours.size(); neighbourIndex++) {
-				Patch* currentNeighbour = neighbours[neighbourIndex];
-				if (currentNeighbour->nestScent > maxScent) {
+			for (auto currentNeighbour : neighbours) {
+					if (currentNeighbour->nestScent > maxScent) {
 					maxScentPatch = currentNeighbour;
 					maxScent = currentNeighbour->nestScent;
 				}	
 			}
 			if (maxScentPatch == nullptr) {
+                cout << "fail";
 				wiggle();
 				return;
 			}
@@ -99,7 +102,7 @@ public:
 				float deltaX = maxScentPatch->x - x;
 				float deltaY = maxScentPatch->y - y;
 				float targetAngle = std::atan2(deltaY, deltaX) * 180.0 / M_PI;
-
+                cout << targetAngle;
 				// Calculate the angle difference between the target angle and current direction
 				float angleDifference = targetAngle - direction;
 
@@ -111,8 +114,8 @@ public:
 				float moveY = sin(direction * M_PI / 180.0) * 1.0;
 
 				// Update ant's position while ensuring it stays within the display boundary
-				x = std::max(0, std::min(display_size - 1, static_cast<int>(x + moveX)));
-				y = std::max(0, std::min(display_size - 1, static_cast<int>(y + moveY)));
+				x = std::max(0, std::min(display_size - 1, x + static_cast<int>(std::round(moveX))));
+				y = std::max(0, std::min(display_size - 1, y + static_cast<int>(std::round(moveY))));
 
 			}
 		}
@@ -120,9 +123,7 @@ public:
 
 	void wiggle() {
 		// Generate a random angle change between -20 and 20 degrees
-		std::random_device rd;
-		std::mt19937 gen(rd());
-		std::uniform_real_distribution<float> dis(-45.0, 45.0);
+
 		float randomAngleChange = dis(gen);
 
 		// Update the direction based on the random angle change
