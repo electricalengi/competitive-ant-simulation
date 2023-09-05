@@ -8,8 +8,8 @@
 const int maxTicks = 500;
 const int populationSize = 300;
 const int display_size = 100;
-const float totalDiffusion = 1;
-const float decayFactor = 0 ;
+const float totalDiffusion = 0.8;
+const float decayFactor = 0.5 ;
 
 std::random_device rd;
 std::mt19937 gen(rd());
@@ -50,14 +50,18 @@ public:
         return neighbours;
     }
 
-    void diffuseChemical(Patch patches[][display_size]) {
+    void diffuseChemical(Patch patches[display_size][display_size]) {
         std::vector<Patch*> neighbours = getNeighbours(patches);
         float chemicalAverage = 0;
         for (auto currentNeighbour : neighbours) {
             chemicalAverage += currentNeighbour->chemical;
         }
-        //chemical = (float(1.0) - decayFactor) * chemical + (totalDiffusion) * chemicalAverage;
-        chemical = chemicalAverage;
+        chemical = (float(1.0) - decayFactor) * chemical + (totalDiffusion) * chemicalAverage / 8 * decayFactor;
+        if (chemical < 0.000001) {
+            chemical = 0.0;
+        }
+        //chemical = chemicalAverage;
+
     }
 };
 
@@ -101,7 +105,7 @@ public:
 
 	void returnToNest(Patch patches[][display_size]) {
 		Patch& currentPatch = patches[x][y];
-        currentPatch.chemical += 60;
+        currentPatch.chemical += 1;
 		if (currentPatch.nest) {
 			hasFood = false;
 		}
@@ -237,8 +241,10 @@ public:
 	void go() {
 		while (tick < maxTicks) {
             printSimulationState(patches, workers);
-            for (auto patch : patches) {
-                patch->diffuseChemical(patches);
+            for (int i = 0; i < display_size; ++i) {
+                for (int j = 0; j < display_size; ++j) {
+                    patches[i][j].diffuseChemical(patches);
+                }
             }
 
 			for (auto & worker : workers) {
