@@ -65,34 +65,17 @@ public:
     }
 };
 
-/*class Soldier {
-public:
-	int x, y;
-	int colony;
-
-	Soldier(int startX, int startY, bool hf, int fac) : x(startX), y(startY), colony(fac) {}
-
-	void lookForEnemy(const std::vector<Patch>& patches) {
-		// todo
-	}
-
-	void wiggle() {
-		// todo
-	}
-};*/
-
 class Worker {
 public:
 	int x, y;
-	int colony;
 	bool hasFood;
 	float direction;
 
 
-	explicit Worker(int startX = display_size/2, int startY = display_size/2, int fac = 0, bool hf = false, float d = 270.0) : x(startX), y(startY), colony(fac), hasFood(hf), direction(d) {}
+	explicit Worker(int startX = display_size/2, int startY = display_size/2, int fac = 0, bool hf = false, float d = 270.0) : x(startX), y(startY), hasFood(hf), direction(d) {}
 
 	void lookForFood(Patch patches[][display_size]) {
-		Patch& currentPatch = patches[x][y]; // Get the patch the ant is on
+		Patch& currentPatch = patches[x][y];
 
 		if (currentPatch.food > 0) {
 			hasFood = true;
@@ -233,10 +216,6 @@ public:
 			}
 		}
 	}
-
-	/*void initialiseWorkers() {
-		// nothing
-	}*/
 
 	void go() {
 		while (tick < maxTicks) {
