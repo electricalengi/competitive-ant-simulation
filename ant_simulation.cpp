@@ -5,9 +5,11 @@
 #include <ctime>
 #include <random>
 
-const int maxTicks = 100;
-const int populationSize = 50;
+const int maxTicks = 500;
+const int populationSize = 300;
 const int display_size = 100;
+const float totalDiffusion = 1;
+const float decayFactor = 0 ;
 
 std::random_device rd;
 std::mt19937 gen(rd());
@@ -26,6 +28,37 @@ public:
     int y{};
 
 	explicit Patch(float c = 0, int f = 0, bool n = false, float s = 0, int fsn = 0) : chemical(c), food(f), nest(n), nestScent(s), foodSourceNumber(fsn) {}
+
+
+    std::vector<Patch*> getNeighbours(Patch patches[][display_size]) const {
+        std::vector<Patch *> neighbours;
+
+        // Define the range of neighboring patches
+        int minRow = std::max(0, x - 1);
+        int maxRow = std::min(display_size - 1, x + 1);
+        int minCol = std::max(0, y - 1);
+        int maxCol = std::min(display_size - 1, y + 1);
+
+        // Iterate through the neighboring patch positions and add them to the list
+        for (int row = minRow; row <= maxRow; ++row) {
+            for (int col = minCol; col <= maxCol; ++col) {
+                if (row != x || col != y) {  // Exclude the current patch
+                    neighbours.push_back(&patches[row][col]);
+                }
+            }
+        }
+        return neighbours;
+    }
+
+    void diffuseChemical(Patch patches[][display_size]) {
+        std::vector<Patch*> neighbours = getNeighbours(patches);
+        float chemicalAverage = 0;
+        for (auto currentNeighbour : neighbours) {
+            chemicalAverage += currentNeighbour->chemical;
+        }
+        //chemical = (float(1.0) - decayFactor) * chemical + (totalDiffusion) * chemicalAverage;
+        chemical = chemicalAverage;
+    }
 };
 
 /*class Soldier {
@@ -62,64 +95,75 @@ public:
 			currentPatch.food = 0;
 		}
 		else {
-			// No food on the patch, so the ant wiggles
-			wiggle();
-
-			//Move the ant one pixel in the direction they face
-			float deltaX = cos(direction * (M_PI / 180.0)) * 1.0; // Move 1 pixel in x direction
-			float deltaY = sin(direction * (M_PI / 180.0)) * 1.0; // Move 1 pixel in y direction
-
-			// Update ant's position while ensuring it stays within the display boundary
-			x = std::max(0, std::min(display_size - 1, x + static_cast<int>(std::round(deltaX))));
-			y = std::max(0, std::min(display_size - 1, y + static_cast<int>(std::round(deltaY))));
-
-
+            sniff(currentPatch, patches, true);
 		}
 	}
 
 	void returnToNest(Patch patches[][display_size]) {
 		Patch& currentPatch = patches[x][y];
+        currentPatch.chemical += 60;
 		if (currentPatch.nest) {
 			hasFood = false;
 		}
 		else {
-			std::vector<Patch*> neighbours = getNeighbours(patches);
-			Patch* maxScentPatch = nullptr;
-			float maxScent = 0;
-			for (auto currentNeighbour : neighbours) {
-					if (currentNeighbour->nestScent > maxScent) {
-					maxScentPatch = currentNeighbour;
-					maxScent = currentNeighbour->nestScent;
-				}	
-			}
-			if (maxScentPatch == nullptr) {
-                cout << "fail";
-				wiggle();
-				return;
-			}
-			else {
-				// Calculate the angle towards the patch with max scent
-				float deltaX = maxScentPatch->x - x;
-				float deltaY = maxScentPatch->y - y;
-				float targetAngle = std::atan2(deltaY, deltaX) * 180.0 / M_PI;
-                cout << targetAngle;
-				// Calculate the angle difference between the target angle and current direction
-				float angleDifference = targetAngle - direction;
-
-				// Update the direction based on the angle difference
-				updateDirection(angleDifference);
-
-				// Move the ant one pixel in the direction they face
-				float moveX = cos(direction * M_PI / 180.0) * 1.0;
-				float moveY = sin(direction * M_PI / 180.0) * 1.0;
-
-				// Update ant's position while ensuring it stays within the display boundary
-				x = std::max(0, std::min(display_size - 1, x + static_cast<int>(std::round(moveX))));
-				y = std::max(0, std::min(display_size - 1, y + static_cast<int>(std::round(moveY))));
-
-			}
+            sniff(currentPatch, patches, false);
 		}
 	}
+
+    void sniff(Patch& currentPatch, Patch patches[][display_size], bool lookingForFood) {
+        float Patch::*targetAttribute;
+        if (lookingForFood) {
+            targetAttribute = &Patch::chemical;
+        } else {
+            targetAttribute = &Patch::nestScent;
+        }
+
+        std::vector<Patch*> neighbours = currentPatch.getNeighbours(patches);
+        Patch* maxScentPatch = nullptr;
+        float maxScent = 0;
+        for (auto currentNeighbour : neighbours) {
+            if (currentNeighbour->*targetAttribute > maxScent) {
+                maxScentPatch = currentNeighbour;
+                maxScent = currentNeighbour->*targetAttribute;
+            }
+        }
+        if (maxScentPatch == nullptr) {
+            //cout << "fail";
+            wiggle();
+
+        }
+        else {
+            // Calculate the angle towards the patch with max scent
+            float deltaX = maxScentPatch->x - x;
+            float deltaY = maxScentPatch->y - y;
+            float targetAngle = std::atan2(deltaY, deltaX) * 180.0 / M_PI;
+            //cout << targetAngle;
+            // Calculate the angle difference between the target angle and current direction
+            float angleDifference = targetAngle - direction;
+
+            // Update the direction based on the angle difference
+            updateDirection(angleDifference);
+        }
+
+        // Move the ant one pixel in the direction they face
+        float moveX = cos(direction * M_PI / 180.0) * 1.0;
+        float moveY = sin(direction * M_PI / 180.0) * 1.0;
+
+        // Update ant's position while ensuring it stays within the display boundary
+        int newX = x + static_cast<int>(std::round(moveX));
+        int newY = y + static_cast<int>(std::round(moveY));
+        // Check if the new position would take the ant off the map
+        if (newX < 0 || newX >= display_size || newY < 0 || newY >= display_size) {
+            updateDirection(180);
+        } else {
+            // Update ant's position
+            x = newX;
+            y = newY;
+        }
+
+    }
+
+
 
 	void wiggle() {
 		// Generate a random angle change between -20 and 20 degrees
@@ -140,27 +184,6 @@ public:
 		else if (direction < 0.0) {
 			direction += 360.0;
 		}
-	}
-
-	std::vector<Patch*> getNeighbours(Patch patches[][display_size]) const {
-		std::vector<Patch*> neighbours;
-
-		// Define the range of neighboring patches
-		int minRow = std::max(0, x - 1);
-		int maxRow = std::min(display_size - 1, x + 1);
-		int minCol = std::max(0, y - 1);
-		int maxCol = std::min(display_size - 1, y + 1);
-
-		// Iterate through the neighboring patch positions and add them to the list
-		for (int row = minRow; row <= maxRow; ++row) {
-			for (int col = minCol; col <= maxCol; ++col) {
-				if (row != x || col != y) {  // Exclude the current patch
-					neighbours.push_back(&patches[row][col]);
-				}
-			}
-		}
-
-		return neighbours;
 	}
 };
 
@@ -202,6 +225,7 @@ public:
                 patch.x = x;
                 patch.y = y;
 				patch.nestScent = 1 / distance_nest;
+                patch.chemical = 0;
 			}
 		}
 	}
@@ -213,6 +237,10 @@ public:
 	void go() {
 		while (tick < maxTicks) {
             printSimulationState(patches, workers);
+            for (auto patch : patches) {
+                patch->diffuseChemical(patches);
+            }
+
 			for (auto & worker : workers) {
                 if (worker.hasFood) {
 					worker.returnToNest(patches);
@@ -257,7 +285,9 @@ public:
                         cout << 'N'; // Nest patch
                     } else if (displayPatches[x][y].food > 0) {
                         cout << 'P'; // Food patch
-                    } else {
+                    } else if ((displayPatches[x][y].chemical > 0)) {
+                        cout << 'C';
+                    } else  {
                         cout << ' ';
                     }
                 }
