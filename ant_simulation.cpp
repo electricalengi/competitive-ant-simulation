@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <random>
+#include <fstream>
 
 const int maxTicks = 500;
 const int populationSize = 300;
@@ -130,6 +131,7 @@ public:
 
             // Update the direction based on the angle difference
             updateDirection(angleDifference);
+            wiggle();
         }
 
         // Move the ant one pixel in the direction they face
@@ -187,6 +189,8 @@ public:
 	int nest_y = display_size / 2;
 	int food_1_x = 75;
 	int food_1_y = 75;
+    int food_2_x = 50;
+    int food_2_y = 25;
 	
 
 	Simulation() {
@@ -199,12 +203,18 @@ public:
 			for (int y = 0; y < display_size; y++) {
 				Patch& patch = patches[x][y];
 				float distance_nest = pow(nest_x - x, 2) + pow(nest_y - y, 2);
-				float distance_food = pow(food_1_x - x, 2) + pow(food_1_y - y, 2);
+				float distance_food1 = pow(food_1_x - x, 2) + pow(food_1_y - y, 2);
+                float distance_food2 = pow(food_2_x - x, 2) + pow(food_2_y - y, 2);
 
-				if (distance_food < 30) {
+				if (distance_food1 < 30) {
 					patch.foodSourceNumber = 1;
 					patch.food = 10;
 				}
+
+                if (distance_food2 < 20) {
+                    patch.foodSourceNumber = 2;
+                    patch.food = 10;
+                }
 
 				if (distance_nest < 50) {
 					patch.nest = true;
@@ -280,10 +290,91 @@ public:
             cout << endl;
         }
     }
+
+    void outputSimulationResultsToCSV(const std::string& filename) {
+        std::ofstream outputFile(filename);
+
+        if (!outputFile.is_open()) {
+            std::cerr << "Error opening file for writing: " << filename << std::endl;
+            return;
+        }
+
+        for (int tick = 0; tick < maxTicks; ++tick) {
+            // Write the header row for the CSV file (column names)
+            if (tick == 0) {
+                outputFile << "Tick,";
+                for (int x = 0; x < display_size; ++x) {
+                    for (int y = 0; y < display_size; ++y) {
+                        outputFile << "X" << x << "Y" << y << ",";
+                    }
+                }
+                outputFile << std::endl;
+            }
+
+            // Write the current tick number
+            outputFile << tick << ",";
+
+            // Write the state of each cell in the grid
+            for (int x = 0; x < display_size; ++x) {
+                for (int y = 0; y < display_size; ++y) {
+                    bool printed = false;
+
+                    // Check if any worker is at this position
+                    for (int workerIndex = 0; workerIndex < populationSize; workerIndex++) {
+                        Worker worker = workers[workerIndex];
+                        if (worker.x == x && worker.y == y) {
+                            if (worker.hasFood) {
+                                outputFile << '4'; // Worker with food
+                            } else {
+                                outputFile << '5'; // Worker without food
+                            }
+                            printed = true;
+                            break;
+                        }
+                    }
+
+                    if (!printed) {
+                        // Check if any patch is at this position
+                        if (patches[x][y].nest) {
+                            outputFile << '1'; // Nest patch
+                        } else if (patches[x][y].food > 0) {
+                            outputFile << '2'; // Food patch
+                        } else if ((patches[x][y].chemical > 0)) {
+                            outputFile <<  '3'; // Chemical patch
+                        } else {
+                            outputFile << '0';
+                        }
+                    }
+
+                    outputFile << ",";
+                }
+            }
+
+            outputFile << std::endl;
+
+            // Run one tick of the simulation
+            for (int i = 0; i < display_size; ++i) {
+                for (int j = 0; j < display_size; ++j) {
+                    patches[i][j].diffuseChemical(patches);
+                }
+            }
+
+            for (auto &worker : workers) {
+                if (worker.hasFood) {
+                    worker.returnToNest(patches);
+                } else {
+                    worker.lookForFood(patches);
+                }
+            }
+        }
+
+        outputFile.close();
+    }
 };
 
 
 int main() {
 	Simulation sim;
-	sim.go();
+    sim.outputSimulationResultsToCSV("result.csv");
+	//sim.go();
 }
