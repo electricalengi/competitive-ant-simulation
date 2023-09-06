@@ -227,7 +227,7 @@ public:
 		}
 	}
 
-	void go() {
+	void test() {
 		while (tick < maxTicks) {
             printSimulationState(patches, workers);
             for (int i = 0; i < display_size; ++i) {
@@ -291,7 +291,7 @@ public:
         }
     }
 
-    void outputSimulationResultsToCSV(const std::string& filename) {
+    void go(const std::string& filename) {
         std::ofstream outputFile(filename);
 
         if (!outputFile.is_open()) {
@@ -375,6 +375,6 @@ public:
 
 int main() {
 	Simulation sim;
-    sim.outputSimulationResultsToCSV("result.csv");
-	//sim.go();
+    sim.go("result.csv");
+	//sim.test();
 }
