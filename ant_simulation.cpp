@@ -1,8 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <cstdlib>
-#include <ctime>
 #include <random>
 #include <fstream>
 
@@ -116,7 +114,6 @@ public:
             }
         }
         if (maxScentPatch == nullptr) {
-            //cout << "fail";
             wiggle();
 
         }
@@ -125,7 +122,6 @@ public:
             float deltaX = maxScentPatch->x - x;
             float deltaY = maxScentPatch->y - y;
             float targetAngle = std::atan2(deltaY, deltaX) * 180.0 / M_PI;
-            //cout << targetAngle;
             // Calculate the angle difference between the target angle and current direction
             float angleDifference = targetAngle - direction;
 
@@ -266,9 +262,7 @@ public:
                         } else {
                             cout << 'W'; // Worker without food
                         }
-                        /*cout << " (Colony: " << worker.colony
-                             << ", Direction: " << worker.direction
-                             << ", Has Food: " << (worker.hasFood ? "true" : "false") << ")";*/
+
                         printed = true;
                         break;
                     }
