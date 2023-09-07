@@ -25,11 +25,13 @@ public:
 	int foodSourceNumber;
     int x{};
     int y{};
+    std::vector<Patch *> neighbourLookup;
 
-	explicit Patch(float c = 0, int f = 0, bool n = false, float s = 0, int fsn = 0) : chemical(c), food(f), nest(n), nestScent(s), foodSourceNumber(fsn) {}
+	explicit Patch(float c = 0, int f = 0, bool n = false, float s = 0, int fsn = 0) : chemical(c), food(f), nest(n), nestScent(s), foodSourceNumber(fsn) {
+    }
 
 
-    std::vector<Patch*> getNeighbours(Patch patches[][display_size]) const {
+    void getNeighbours(Patch patches[][display_size]) {
         std::vector<Patch *> neighbours;
 
         // Define the range of neighboring patches
@@ -46,13 +48,12 @@ public:
                 }
             }
         }
-        return neighbours;
+        neighbourLookup = neighbours;
     }
 
     void diffuseChemical(Patch patches[display_size][display_size]) {
-        std::vector<Patch*> neighbours = getNeighbours(patches);
         float chemicalAverage = 0;
-        for (auto currentNeighbour : neighbours) {
+        for (auto currentNeighbour : neighbourLookup) {
             chemicalAverage += currentNeighbour->chemical;
         }
         chemical = (float(1.0) - decayFactor) * chemical + (totalDiffusion) * chemicalAverage / 8 * decayFactor;
@@ -104,7 +105,7 @@ public:
             targetAttribute = &Patch::nestScent;
         }
 
-        std::vector<Patch*> neighbours = currentPatch.getNeighbours(patches);
+        std::vector<Patch*> neighbours = currentPatch.neighbourLookup;
         Patch* maxScentPatch = nullptr;
         float maxScent = 0;
         for (auto currentNeighbour : neighbours) {
@@ -221,6 +222,11 @@ public:
                 patch.chemical = 0;
 			}
 		}
+        for (auto & patche : patches) {
+            for (auto & j : patche) {
+                j.getNeighbours(patches);
+            }
+        }
 	}
 
 	void test() {
@@ -289,11 +295,28 @@ public:
         std::vector<std::vector<char>> gridData(maxTicks, std::vector<char>(display_size * display_size));
 
         for (int tick = 0; tick < maxTicks; ++tick) {
+            int j;
             for (int i = 0; i < display_size; ++i) {
-                for (int j = 0; j < display_size; ++j) {
+                j = 0;
+                for (; j < display_size - 9; j += 10) {
+                    patches[i][j].diffuseChemical(patches);
+                    patches[i][j + 1].diffuseChemical(patches);
+                    patches[i][j + 2].diffuseChemical(patches);
+                    patches[i][j + 3].diffuseChemical(patches);
+                    patches[i][j + 4].diffuseChemical(patches);
+                    patches[i][j + 5].diffuseChemical(patches);
+                    patches[i][j + 6].diffuseChemical(patches);
+                    patches[i][j + 7].diffuseChemical(patches);
+                    patches[i][j + 8].diffuseChemical(patches);
+                    patches[i][j + 9].diffuseChemical(patches);
+                }
+
+                // Handle the remaining elements (less than 10) if any
+                for (; j < display_size; ++j) {
                     patches[i][j].diffuseChemical(patches);
                 }
             }
+
 
             for (auto &worker: workers) {
                 if (worker.hasFood) {
