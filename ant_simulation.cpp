@@ -53,13 +53,20 @@ public:
 
     void diffuseChemical(Patch patches[display_size][display_size]) {
         float chemicalAverage = 0;
-        chemicalAverage += neighbourLookup[0]->chemical;
-        chemicalAverage += neighbourLookup[1]->chemical;
-        chemicalAverage += neighbourLookup[2]->chemical;
-        for (int i = 3; i < neighbourLookup.size(); i++) {
-            chemicalAverage += neighbourLookup[i]->chemical;
+        if (neighbourLookup.size() < 8) {
+            for (auto & i : neighbourLookup) {
+                chemicalAverage += i->chemical;
+            }
+        } else {
+            chemicalAverage += neighbourLookup[0]->chemical;
+            chemicalAverage += neighbourLookup[1]->chemical;
+            chemicalAverage += neighbourLookup[2]->chemical;
+            chemicalAverage += neighbourLookup[3]->chemical;
+            chemicalAverage += neighbourLookup[4]->chemical;
+            chemicalAverage += neighbourLookup[5]->chemical;
+            chemicalAverage += neighbourLookup[6]->chemical;
+            chemicalAverage += neighbourLookup[7]->chemical;
         }
-
         if (chemicalAverage == 0.0) {
             return;
         }
