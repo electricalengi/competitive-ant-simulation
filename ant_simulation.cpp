@@ -187,7 +187,7 @@ public:
 	int food_1_y = 75;
     int food_2_x = 50;
     int food_2_y = 25;
-	
+
 
 	Simulation() {
 		//initialiseWorkers();
@@ -286,6 +286,60 @@ public:
     }
 
     void go(const std::string& filename) {
+        std::vector<std::vector<char>> gridData(maxTicks, std::vector<char>(display_size * display_size));
+
+        for (int tick = 0; tick < maxTicks; ++tick) {
+            for (int i = 0; i < display_size; ++i) {
+                for (int j = 0; j < display_size; ++j) {
+                    patches[i][j].diffuseChemical(patches);
+                }
+            }
+
+            for (auto &worker: workers) {
+                if (worker.hasFood) {
+                    worker.returnToNest(patches);
+                } else {
+                    worker.lookForFood(patches);
+                }
+            }
+
+//          Write the state of each cell in the grid
+            for (int x = 0; x < display_size; ++x) {
+                for (int y = 0; y < display_size; ++y) {
+                    bool printed = false;
+
+                    // Check if any worker is at this position
+                    for (int workerIndex = 0; workerIndex < populationSize; workerIndex++) {
+                        Worker worker = workers[workerIndex];
+                        if (worker.x == x && worker.y == y) {
+                            if (worker.hasFood) {
+                                gridData[tick][x * display_size + y] = '4'; // Worker with food
+                            } else {
+                                gridData[tick][x * display_size + y] = '5'; // Worker without food
+                            }
+                            printed = true;
+                            break;
+                        }
+                    }
+
+                    if (!printed) {
+                        // Check if any patch is at this position
+                        if (patches[x][y].nest) {
+                            gridData[tick][x * display_size + y] = '1'; // Nest patch
+                        } else if (patches[x][y].food > 0) {
+                            gridData[tick][x * display_size + y] = '2'; // Food patch
+                        } else if ((patches[x][y].chemical > 0)) {
+                            gridData[tick][x * display_size + y] = '3'; // Chemical patch
+                        } else {
+                            gridData[tick][x * display_size + y] = '0';
+                        }
+                    }
+
+                }
+            }
+        }
+
+
         std::ofstream outputFile(filename);
 
         if (!outputFile.is_open()) {
@@ -308,62 +362,16 @@ public:
             // Write the current tick number
             outputFile << tick << ",";
 
-            // Write the state of each cell in the grid
             for (int x = 0; x < display_size; ++x) {
                 for (int y = 0; y < display_size; ++y) {
-                    bool printed = false;
-
-                    // Check if any worker is at this position
-                    for (int workerIndex = 0; workerIndex < populationSize; workerIndex++) {
-                        Worker worker = workers[workerIndex];
-                        if (worker.x == x && worker.y == y) {
-                            if (worker.hasFood) {
-                                outputFile << '4'; // Worker with food
-                            } else {
-                                outputFile << '5'; // Worker without food
-                            }
-                            printed = true;
-                            break;
-                        }
-                    }
-
-                    if (!printed) {
-                        // Check if any patch is at this position
-                        if (patches[x][y].nest) {
-                            outputFile << '1'; // Nest patch
-                        } else if (patches[x][y].food > 0) {
-                            outputFile << '2'; // Food patch
-                        } else if ((patches[x][y].chemical > 0)) {
-                            outputFile <<  '3'; // Chemical patch
-                        } else {
-                            outputFile << '0';
-                        }
-                    }
-
-                    outputFile << ",";
+                    outputFile << gridData[tick][x * display_size + y] << ',';
                 }
             }
-
             outputFile << std::endl;
-
-            // Run one tick of the simulation
-            for (int i = 0; i < display_size; ++i) {
-                for (int j = 0; j < display_size; ++j) {
-                    patches[i][j].diffuseChemical(patches);
-                }
-            }
-
-            for (auto &worker : workers) {
-                if (worker.hasFood) {
-                    worker.returnToNest(patches);
-                } else {
-                    worker.lookForFood(patches);
-                }
-            }
         }
-
         outputFile.close();
     }
+
 };
 
 
