@@ -22,12 +22,11 @@ public:
 	int food;
 	bool nest;
 	float nestScent;
-	int foodSourceNumber;
     int x{};
     int y{};
     std::vector<Patch *> neighbourLookup;
 
-	explicit Patch(float c = 0, int f = 0, bool n = false, float s = 0, int fsn = 0) : chemical(c), food(f), nest(n), nestScent(s), foodSourceNumber(fsn) {
+	explicit Patch(float c = 0, int f = 0, bool n = false, float s = 0) : chemical(c), food(f), nest(n), nestScent(s) {
     }
 
 
@@ -51,21 +50,22 @@ public:
         neighbourLookup = neighbours;
     }
 
-    void diffuseChemical(Patch patches[display_size][display_size]) {
+    void diffuseChemical() {
         float chemicalAverage = 0;
-        if (neighbourLookup.size() < 8) {
-            for (auto & i : neighbourLookup) {
-                chemicalAverage += i->chemical;
-            }
-        } else {
-            chemicalAverage += neighbourLookup[0]->chemical;
-            chemicalAverage += neighbourLookup[1]->chemical;
-            chemicalAverage += neighbourLookup[2]->chemical;
+        chemicalAverage += neighbourLookup[0]->chemical;
+        chemicalAverage += neighbourLookup[1]->chemical;
+        chemicalAverage += neighbourLookup[2]->chemical;
+        if (neighbourLookup.size() == 8) {
             chemicalAverage += neighbourLookup[3]->chemical;
             chemicalAverage += neighbourLookup[4]->chemical;
             chemicalAverage += neighbourLookup[5]->chemical;
             chemicalAverage += neighbourLookup[6]->chemical;
             chemicalAverage += neighbourLookup[7]->chemical;
+
+        } else {
+            for (int i = 3; i < neighbourLookup.size(); i++) {
+                chemicalAverage += neighbourLookup[i]->chemical;
+            }
         }
         if (chemicalAverage == 0.0) {
             return;
@@ -86,7 +86,7 @@ public:
 	float direction;
 
 
-	explicit Worker(int startX = display_size/2, int startY = display_size/2, int fac = 0, bool hf = false, float d = 270.0) : x(startX), y(startY), hasFood(hf), direction(d) {}
+	explicit Worker(int startX = display_size/2, int startY = display_size/2, bool hf = false, float d = 270.0) : x(startX), y(startY), hasFood(hf), direction(d) {}
 
 	void lookForFood(Patch patches[][display_size]) {
 		Patch& currentPatch = patches[x][y];
@@ -96,7 +96,7 @@ public:
 			currentPatch.food = 0;
 		}
 		else {
-            sniff(currentPatch, patches, true);
+            sniff(currentPatch, true);
 		}
 	}
 
@@ -107,11 +107,11 @@ public:
 			hasFood = false;
 		}
 		else {
-            sniff(currentPatch, patches, false);
+            sniff(currentPatch, false);
 		}
 	}
 
-    void sniff(Patch& currentPatch, Patch patches[][display_size], bool lookingForFood) {
+    void sniff(Patch& currentPatch, bool lookingForFood) {
         float Patch::*targetAttribute;
         if (lookingForFood) {
             targetAttribute = &Patch::chemical;
@@ -134,8 +134,8 @@ public:
         }
         else {
             // Calculate the angle towards the patch with max scent
-            float deltaX = maxScentPatch->x - x;
-            float deltaY = maxScentPatch->y - y;
+            int deltaX = maxScentPatch->x - x;
+            int deltaY = maxScentPatch->y - y;
             float targetAngle = std::atan2(deltaY, deltaX) * 180.0 / M_PI;
             // Calculate the angle difference between the target angle and current direction
             float angleDifference = targetAngle - direction;
@@ -193,7 +193,6 @@ class Simulation {
 public:
     Worker workers[populationSize];
 	Patch patches[display_size][display_size];
-	int tick = 0;
 
 
 	int nest_x = display_size / 2;
@@ -213,17 +212,15 @@ public:
 		for (int x = 0; x < display_size; x++) {
 			for (int y = 0; y < display_size; y++) {
 				Patch& patch = patches[x][y];
-				float distance_nest = pow(nest_x - x, 2) + pow(nest_y - y, 2);
-				float distance_food1 = pow(food_1_x - x, 2) + pow(food_1_y - y, 2);
-                float distance_food2 = pow(food_2_x - x, 2) + pow(food_2_y - y, 2);
+                int distance_nest = (nest_x - x) * (nest_x - x) + (nest_y - y) * (nest_y - y);
+                int distance_food1 = (food_1_x - x) * (food_1_x - x) + (food_1_y - y) * (food_1_y - y);
+                int distance_food2 = (food_2_x - x) * (food_2_x - x) + (food_2_y - y) * (food_2_y - y);
 
 				if (distance_food1 < 30) {
-					patch.foodSourceNumber = 1;
 					patch.food = 10;
 				}
 
                 if (distance_food2 < 20) {
-                    patch.foodSourceNumber = 2;
                     patch.food = 10;
                 }
 
@@ -232,102 +229,40 @@ public:
 				}
                 patch.x = x;
                 patch.y = y;
-				patch.nestScent = 1 / distance_nest;
+				patch.nestScent = 1.0 / distance_nest;
                 patch.chemical = 0;
 			}
 		}
-        for (auto & patche : patches) {
-            for (auto & j : patche) {
+        for (auto & patch : patches) {
+            for (auto & j : patch) {
                 j.getNeighbours(patches);
             }
         }
 	}
-
-	void test() {
-		while (tick < maxTicks) {
-            printSimulationState(patches, workers);
-            for (int i = 0; i < display_size; ++i) {
-                for (int j = 0; j < display_size; ++j) {
-                    patches[i][j].diffuseChemical(patches);
-                }
-            }
-
-			for (auto & worker : workers) {
-                if (worker.hasFood) {
-					worker.returnToNest(patches);
-				}
-                else {
-                    worker.lookForFood(patches);
-                }
-			}
-            tick++;
-		}
-	}
-
-
-    static void printSimulationState(const Patch displayPatches[][display_size], const Worker displayWorkers[populationSize]) {
-        // Clear the screen (for visualization purposes)
-        system("cls");
-
-        for (int y = 0; y < display_size; ++y) {
-            for (int x = 0; x < display_size; ++x) {
-                bool printed = false;
-
-                // Check if any worker is at this position
-                for (int workerIndex = 0; workerIndex < populationSize; workerIndex ++) {
-                    Worker worker = displayWorkers[workerIndex];
-                    if (worker.x == x && worker.y == y) {
-                        if (worker.hasFood) {
-                            cout << 'F'; // Worker with food
-                        } else {
-                            cout << 'W'; // Worker without food
-                        }
-
-                        printed = true;
-                        break;
-                    }
-                }
-
-                if (!printed) {
-                    // Check if any patch is at this position
-                    if (displayPatches[x][y].nest) {
-                        cout << 'N'; // Nest patch
-                    } else if (displayPatches[x][y].food > 0) {
-                        cout << 'P'; // Food patch
-                    } else if ((displayPatches[x][y].chemical > 0)) {
-                        cout << 'C';
-                    } else  {
-                        cout << ' ';
-                    }
-                }
-            }
-            cout << endl;
-        }
-    }
 
     void go(const std::string& filename) {
         std::vector<std::vector<char>> gridData(maxTicks, std::vector<char>(display_size * display_size));
 
         for (int tick = 0; tick < maxTicks; ++tick) {
             int j;
-            for (int i = 0; i < display_size; ++i) {
+            for (auto & patch : patches) {
                 j = 0;
                 for (; j < display_size - 9; j += 10) {
-                    patches[i][j].diffuseChemical(patches);
-                    patches[i][j + 1].diffuseChemical(patches);
-                    patches[i][j + 2].diffuseChemical(patches);
-                    patches[i][j + 3].diffuseChemical(patches);
-                    patches[i][j + 4].diffuseChemical(patches);
-                    patches[i][j + 5].diffuseChemical(patches);
-                    patches[i][j + 6].diffuseChemical(patches);
-                    patches[i][j + 7].diffuseChemical(patches);
-                    patches[i][j + 8].diffuseChemical(patches);
-                    patches[i][j + 9].diffuseChemical(patches);
+                    patch[j].diffuseChemical();
+                    patch[j + 1].diffuseChemical();
+                    patch[j + 2].diffuseChemical();
+                    patch[j + 3].diffuseChemical();
+                    patch[j + 4].diffuseChemical();
+                    patch[j + 5].diffuseChemical();
+                    patch[j + 6].diffuseChemical();
+                    patch[j + 7].diffuseChemical();
+                    patch[j + 8].diffuseChemical();
+                    patch[j + 9].diffuseChemical();
                 }
 
                 // Handle the remaining elements (less than 10) if any
                 for (; j < display_size; ++j) {
-                    patches[i][j].diffuseChemical(patches);
+                    patch[j].diffuseChemical();
                 }
             }
 
@@ -346,8 +281,7 @@ public:
                     bool printed = false;
 
                     // Check if any worker is at this position
-                    for (int workerIndex = 0; workerIndex < populationSize; workerIndex++) {
-                        Worker worker = workers[workerIndex];
+                    for (auto worker : workers) {
                         if (worker.x == x && worker.y == y) {
                             if (worker.hasFood) {
                                 gridData[tick][x * display_size + y] = '4'; // Worker with food
@@ -384,9 +318,9 @@ public:
             return;
         }
 
-        for (int tick = 0; tick < maxTicks; ++tick) {
+        for (int tickPrint = 0; tickPrint < maxTicks; ++tickPrint) {
             // Write the header row for the CSV file (column names)
-            if (tick == 0) {
+            if (tickPrint == 0) {
                 outputFile << "Tick,";
                 for (int x = 0; x < display_size; ++x) {
                     for (int y = 0; y < display_size; ++y) {
@@ -396,12 +330,12 @@ public:
                 outputFile << std::endl;
             }
 
-            // Write the current tick number
-            outputFile << tick << ",";
+            // Write the current tickPrint number
+            outputFile << tickPrint << ",";
 
             for (int x = 0; x < display_size; ++x) {
                 for (int y = 0; y < display_size; ++y) {
-                    outputFile << gridData[tick][x * display_size + y] << ',';
+                    outputFile << gridData[tickPrint][x * display_size + y] << ',';
                 }
             }
             outputFile << std::endl;
