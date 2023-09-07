@@ -53,8 +53,15 @@ public:
 
     void diffuseChemical(Patch patches[display_size][display_size]) {
         float chemicalAverage = 0;
-        for (auto currentNeighbour : neighbourLookup) {
-            chemicalAverage += currentNeighbour->chemical;
+        chemicalAverage += neighbourLookup[0]->chemical;
+        chemicalAverage += neighbourLookup[1]->chemical;
+        chemicalAverage += neighbourLookup[2]->chemical;
+        for (int i = 3; i < neighbourLookup.size(); i++) {
+            chemicalAverage += neighbourLookup[i]->chemical;
+        }
+
+        if (chemicalAverage == 0.0) {
+            return;
         }
         chemical = (float(1.0) - decayFactor) * chemical + (totalDiffusion) * chemicalAverage / 8 * decayFactor;
         if (chemical < 0.000001) {
