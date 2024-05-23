@@ -7,7 +7,6 @@
 
 class Simulation {
 public:
-    Worker workers[POPULATION_SIZE];
     Patch patches[DISPLAY_SIZE][DISPLAY_SIZE];
 
     int nest_x = DISPLAY_SIZE / 2;

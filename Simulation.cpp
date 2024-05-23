@@ -39,10 +39,23 @@ void Simulation::initialisePatches() {
     }
 }
 
+// Calculate fitness and perform genetic algorithm 
 void Simulation::go(const std::string& filename) {
+
+    static std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> chemSens(-1, 1);
+    std::uniform_real_distribution<float> craze(0, 180);
+
     int totalFood = 0;
     std::vector<int> totalFoods(MAX_TICKS);
     std::vector<std::vector<char>> gridData(MAX_TICKS, std::vector<char>(DISPLAY_SIZE * DISPLAY_SIZE));
+
+    std::vector<Worker> workers(POPULATION_SIZE);
+
+    for (auto & worker : workers) {
+        worker = Worker(chemSens(gen), chemSens(gen), craze(gen));
+    }
 
     for (int tick = 0; tick < MAX_TICKS; ++tick) {
         int j;

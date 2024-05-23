@@ -6,13 +6,12 @@
 
 static std::random_device rd;
 std::mt19937 gen(rd());
-std::uniform_real_distribution<float> dis(-45.0, 45.0);
+std::uniform_real_distribution<float> dis;
 
-float chemical_sensitivity = 0;
-float nest_sensitivity = 0;
-float wiggle = 0;
+int fitness = 0;
 
-Worker::Worker(int startX, int startY, bool hf, float d) : x(startX), y(startY), hasFood(hf), direction(d) {
+Worker::Worker(float cs, float ns,
+               float c, int startX, int startY, bool hf, float d) : x(startX), y(startY), hasFood(hf), direction(d), chemical_sensitivity(cs), nest_sensitivity(ns), crazy(c), dis(-crazy, crazy) {
     std::uniform_real_distribution<float> initialDis(0, 360.0);
     direction = initialDis(gen);
 }
@@ -23,6 +22,7 @@ void Worker::lookForFood(Patch patches[][DISPLAY_SIZE]) {
     if (currentPatch.food > 0) {
         hasFood = true;
         currentPatch.food = 0;
+        fitness += 1;
     }
     else {
         sniff(currentPatch, true);
@@ -35,6 +35,7 @@ void Worker::returnToNest(Patch patches[][DISPLAY_SIZE], int &totalFood) {
     if (currentPatch.nest) {
         hasFood = false;
         totalFood++;
+        fitness += 10;
     }
     else {
         sniff(currentPatch, false);
@@ -42,25 +43,31 @@ void Worker::returnToNest(Patch patches[][DISPLAY_SIZE], int &totalFood) {
 }
 
 void Worker::sniff(Patch& currentPatch, bool lookingForFood) {
-    float Patch::*targetAttribute;
-    if (lookingForFood) {
-        targetAttribute = &Patch::chemical;
-    } else {
-        targetAttribute = &Patch::nestScent;
-    }
-
-    std::vector<Patch*> neighbours = currentPatch.neighbourLookup;
     Patch* maxScentPatch = nullptr;
-    float maxScent = 0;
-    for (auto currentNeighbour : neighbours) {
-        if (currentNeighbour->*targetAttribute > maxScent) {
-            maxScentPatch = currentNeighbour;
-            maxScent = currentNeighbour->*targetAttribute;
+    if (!lookingForFood) {
+        std::vector<Patch*> neighbours = currentPatch.neighbourLookup;
+        float maxScent = 0;
+        for (auto currentNeighbour : neighbours) {
+            if (currentNeighbour->nestScent > maxScent) {
+                maxScentPatch = currentNeighbour;
+                maxScent = currentNeighbour->nestScent;
+            }
+        }
+    } else {
+        std::vector<Patch*> neighbours = currentPatch.neighbourLookup;
+        float maxScent = 0;
+        float scent;
+        for (auto currentNeighbour : neighbours) {
+            scent = currentNeighbour->chemical * chemical_sensitivity + currentNeighbour->nestScent * nest_sensitivity;
+            if (scent > maxScent) {
+                maxScentPatch = currentNeighbour;
+                maxScent = scent;
+            }
         }
     }
+
     if (maxScentPatch == nullptr) {
         wiggle();
-
     }
     else {
         // Calculate the angle towards the patch with max scent
@@ -114,4 +121,8 @@ void Worker::updateDirection(float deltaAngleDegrees) {
     else if (direction < 0.0) {
         direction += 360.0;
     }
+}
+
+int getFitness() {
+    return fitness;
 }
