@@ -11,4 +11,5 @@ add_executable(competitive_ant_simulation
         Simulation.cpp
         Simulation.h
         Worker.cpp
-        Worker.h)
+        Worker.h
+)

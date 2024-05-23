@@ -8,6 +8,10 @@ static std::random_device rd;
 std::mt19937 gen(rd());
 std::uniform_real_distribution<float> dis(-45.0, 45.0);
 
+float chemical_sensitivity = 0;
+float nest_sensitivity = 0;
+float wiggle = 0;
+
 Worker::Worker(int startX, int startY, bool hf, float d) : x(startX), y(startY), hasFood(hf), direction(d) {
     std::uniform_real_distribution<float> initialDis(0, 360.0);
     direction = initialDis(gen);
@@ -25,11 +29,12 @@ void Worker::lookForFood(Patch patches[][DISPLAY_SIZE]) {
     }
 }
 
-void Worker::returnToNest(Patch patches[][DISPLAY_SIZE]) {
+void Worker::returnToNest(Patch patches[][DISPLAY_SIZE], int &totalFood) {
     Patch& currentPatch = patches[x][y];
     currentPatch.chemical += 1;
     if (currentPatch.nest) {
         hasFood = false;
+        totalFood++;
     }
     else {
         sniff(currentPatch, false);

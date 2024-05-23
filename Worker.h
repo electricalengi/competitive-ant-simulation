@@ -16,7 +16,7 @@ public:
 
     void lookForFood(Patch patches[][DISPLAY_SIZE]);
 
-    void returnToNest(Patch patches[][DISPLAY_SIZE]);
+    void returnToNest(Patch patches[][DISPLAY_SIZE], int &);
 
     void sniff(Patch& currentPatch, bool lookingForFood);
 

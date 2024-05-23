@@ -1,6 +1,7 @@
 #include "Simulation.h"
 #include <fstream>
 #include <vector>
+#include <cstdlib>
 
 Simulation::Simulation() {
     initialisePatches();
@@ -15,11 +16,11 @@ void Simulation::initialisePatches() {
             int distance_food2 = (food_2_x - x) * (food_2_x - x) + (food_2_y - y) * (food_2_y - y);
 
             if (distance_food1 < 30) {
-                patch.food = 10;
+                patch.food = 1;
             }
 
             if (distance_food2 < 20) {
-                patch.food = 10;
+                patch.food = 1;
             }
 
             if (distance_nest < 50) {
@@ -39,6 +40,8 @@ void Simulation::initialisePatches() {
 }
 
 void Simulation::go(const std::string& filename) {
+    int totalFood = 0;
+    std::vector<int> totalFoods(MAX_TICKS);
     std::vector<std::vector<char>> gridData(MAX_TICKS, std::vector<char>(DISPLAY_SIZE * DISPLAY_SIZE));
 
     for (int tick = 0; tick < MAX_TICKS; ++tick) {
@@ -52,13 +55,15 @@ void Simulation::go(const std::string& filename) {
 
         for (auto &worker: workers) {
             if (worker.hasFood) {
-                worker.returnToNest(patches);
+                worker.returnToNest(patches, totalFood);
             } else {
                 worker.lookForFood(patches);
             }
         }
 
-//          Write the state of each cell in the grid
+        totalFoods[tick] = totalFood;
+
+        // Write the state of each cell in the grid
         for (int x = 0; x < DISPLAY_SIZE; ++x) {
             for (int y = 0; y < DISPLAY_SIZE; ++y) {
                 bool printed = false;
@@ -110,6 +115,7 @@ void Simulation::go(const std::string& filename) {
                     outputFile << "X" << x << "Y" << y << ",";
                 }
             }
+            outputFile << "Total Food";
             outputFile << std::endl;
         }
 
@@ -121,7 +127,20 @@ void Simulation::go(const std::string& filename) {
                 outputFile << gridData[tickPrint][x * DISPLAY_SIZE + y] << ',';
             }
         }
+        outputFile << totalFoods[tickPrint];
+
         outputFile << std::endl;
     }
     outputFile.close();
+
+    // Form the command to execute the Python script
+    std::string command = "python C:/Users/chigg/CLionProjects/competitive-ant-simulation/cmake-build-debug/game.py";
+
+    // Execute the command
+    int status = std::system(command.c_str());
+
+    // Check if the command executed successfully
+    if (status != 0) {
+        std::cerr << "Error executing the Python script." << std::endl;
+    }
 }
