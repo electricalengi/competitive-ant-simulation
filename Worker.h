@@ -12,11 +12,11 @@ public:
     bool hasFood;
     float direction;
 
-    explicit Worker(int startX = display_size / 2, int startY = display_size / 2, bool hf = false, float d = 270.0);
+    explicit Worker(int startX = DISPLAY_SIZE / 2, int startY = DISPLAY_SIZE / 2, bool hf = false, float d = 0);
 
-    void lookForFood(Patch patches[][display_size]);
+    void lookForFood(Patch patches[][DISPLAY_SIZE]);
 
-    void returnToNest(Patch patches[][display_size]);
+    void returnToNest(Patch patches[][DISPLAY_SIZE]);
 
     void sniff(Patch& currentPatch, bool lookingForFood);
 

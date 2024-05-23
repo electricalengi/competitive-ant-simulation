@@ -7,8 +7,8 @@ Simulation::Simulation() {
 }
 
 void Simulation::initialisePatches() {
-    for (int x = 0; x < display_size; x++) {
-        for (int y = 0; y < display_size; y++) {
+    for (int x = 0; x < DISPLAY_SIZE; x++) {
+        for (int y = 0; y < DISPLAY_SIZE; y++) {
             Patch& patch = patches[x][y];
             int distance_nest = (nest_x - x) * (nest_x - x) + (nest_y - y) * (nest_y - y);
             int distance_food1 = (food_1_x - x) * (food_1_x - x) + (food_1_y - y) * (food_1_y - y);
@@ -39,28 +39,13 @@ void Simulation::initialisePatches() {
 }
 
 void Simulation::go(const std::string& filename) {
-    std::vector<std::vector<char>> gridData(maxTicks, std::vector<char>(display_size * display_size));
+    std::vector<std::vector<char>> gridData(MAX_TICKS, std::vector<char>(DISPLAY_SIZE * DISPLAY_SIZE));
 
-    for (int tick = 0; tick < maxTicks; ++tick) {
+    for (int tick = 0; tick < MAX_TICKS; ++tick) {
         int j;
         for (auto & patch : patches) {
-            j = 0;
-            for (; j < display_size - 9; j += 10) {
-                patch[j].diffuseChemical();
-                patch[j + 1].diffuseChemical();
-                patch[j + 2].diffuseChemical();
-                patch[j + 3].diffuseChemical();
-                patch[j + 4].diffuseChemical();
-                patch[j + 5].diffuseChemical();
-                patch[j + 6].diffuseChemical();
-                patch[j + 7].diffuseChemical();
-                patch[j + 8].diffuseChemical();
-                patch[j + 9].diffuseChemical();
-            }
-
-            // Handle the remaining elements (less than 10) if any
-            for (; j < display_size; ++j) {
-                patch[j].diffuseChemical();
+            for (auto & j : patch) {
+                j.diffuseChemical();
             }
         }
 
@@ -74,17 +59,17 @@ void Simulation::go(const std::string& filename) {
         }
 
 //          Write the state of each cell in the grid
-        for (int x = 0; x < display_size; ++x) {
-            for (int y = 0; y < display_size; ++y) {
+        for (int x = 0; x < DISPLAY_SIZE; ++x) {
+            for (int y = 0; y < DISPLAY_SIZE; ++y) {
                 bool printed = false;
 
                 // Check if any worker is at this position
                 for (auto worker : workers) {
                     if (worker.x == x && worker.y == y) {
                         if (worker.hasFood) {
-                            gridData[tick][x * display_size + y] = '4'; // Worker with food
+                            gridData[tick][x * DISPLAY_SIZE + y] = WORKER_WITH_FOOD; // Worker with food
                         } else {
-                            gridData[tick][x * display_size + y] = '5'; // Worker without food
+                            gridData[tick][x * DISPLAY_SIZE + y] = WORKER_WITHOUT_FOOD; // Worker without food
                         }
                         printed = true;
                         break;
@@ -94,13 +79,13 @@ void Simulation::go(const std::string& filename) {
                 if (!printed) {
                     // Check if any patch is at this position
                     if (patches[x][y].nest) {
-                        gridData[tick][x * display_size + y] = '1'; // Nest patch
+                        gridData[tick][x * DISPLAY_SIZE + y] = NEST; // Nest patch
                     } else if (patches[x][y].food > 0) {
-                        gridData[tick][x * display_size + y] = '2'; // Food patch
+                        gridData[tick][x * DISPLAY_SIZE + y] = FOOD; // Food patch
                     } else if ((patches[x][y].chemical > 0)) {
-                        gridData[tick][x * display_size + y] = '3'; // Chemical patch
+                        gridData[tick][x * DISPLAY_SIZE + y] = CHEMICAL; // Chemical patch
                     } else {
-                        gridData[tick][x * display_size + y] = '0';
+                        gridData[tick][x * DISPLAY_SIZE + y] = EMPTY;
                     }
                 }
 
@@ -116,12 +101,12 @@ void Simulation::go(const std::string& filename) {
         return;
     }
 
-    for (int tickPrint = 0; tickPrint < maxTicks; ++tickPrint) {
+    for (int tickPrint = 0; tickPrint < MAX_TICKS; ++tickPrint) {
         // Write the header row for the CSV file (column names)
         if (tickPrint == 0) {
             outputFile << "Tick,";
-            for (int x = 0; x < display_size; ++x) {
-                for (int y = 0; y < display_size; ++y) {
+            for (int x = 0; x < DISPLAY_SIZE; ++x) {
+                for (int y = 0; y < DISPLAY_SIZE; ++y) {
                     outputFile << "X" << x << "Y" << y << ",";
                 }
             }
@@ -131,9 +116,9 @@ void Simulation::go(const std::string& filename) {
         // Write the current tickPrint number
         outputFile << tickPrint << ",";
 
-        for (int x = 0; x < display_size; ++x) {
-            for (int y = 0; y < display_size; ++y) {
-                outputFile << gridData[tickPrint][x * display_size + y] << ',';
+        for (int x = 0; x < DISPLAY_SIZE; ++x) {
+            for (int y = 0; y < DISPLAY_SIZE; ++y) {
+                outputFile << gridData[tickPrint][x * DISPLAY_SIZE + y] << ',';
             }
         }
         outputFile << std::endl;

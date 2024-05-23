@@ -7,11 +7,11 @@
 
 class Simulation {
 public:
-    Worker workers[populationSize];
-    Patch patches[display_size][display_size];
+    Worker workers[POPULATION_SIZE];
+    Patch patches[DISPLAY_SIZE][DISPLAY_SIZE];
 
-    int nest_x = display_size / 2;
-    int nest_y = display_size / 2;
+    int nest_x = DISPLAY_SIZE / 2;
+    int nest_y = DISPLAY_SIZE / 2;
     int food_1_x = 75;
     int food_1_y = 75;
     int food_2_x = 50;

@@ -4,14 +4,14 @@
 
 Patch::Patch(float c, int f, bool n, float s) : chemical(c), food(f), nest(n), nestScent(s) {}
 
-void Patch::getNeighbours(Patch patches[][display_size]) {
+void Patch::getNeighbours(Patch patches[][DISPLAY_SIZE]) {
     std::vector<Patch *> neighbours;
 
     // Define the range of neighboring patches
     int minRow = std::max(0, x - 1);
-    int maxRow = std::min(display_size - 1, x + 1);
+    int maxRow = std::min(DISPLAY_SIZE - 1, x + 1);
     int minCol = std::max(0, y - 1);
-    int maxCol = std::min(display_size - 1, y + 1);
+    int maxCol = std::min(DISPLAY_SIZE - 1, y + 1);
 
     // Iterate through the neighboring patch positions and add them to the list
     for (int row = minRow; row <= maxRow; ++row) {
@@ -44,7 +44,7 @@ void Patch::diffuseChemical() {
     if (chemicalAverage == 0.0) {
         return;
     }
-    chemical = (float(1.0) - decayFactor) * chemical + (totalDiffusion) * chemicalAverage / 8 * decayFactor;
+    chemical = (float(1.0) - DECAY_FACTOR) * chemical + (TOTAL_DIFFUSION) * chemicalAverage / 8 * DECAY_FACTOR;
     if (chemical < 0.000001) {
         chemical = 0.0;
     }

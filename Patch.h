@@ -16,7 +16,7 @@ public:
 
     explicit Patch(float c = 0, int f = 0, bool n = false, float s = 0);
 
-    void getNeighbours(Patch patches[][display_size]);
+    void getNeighbours(Patch patches[][DISPLAY_SIZE]);
 
     void diffuseChemical();
 };

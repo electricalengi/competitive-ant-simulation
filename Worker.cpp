@@ -4,14 +4,16 @@
 #include <random>
 #include <cstdlib>
 
-
-Worker::Worker(int startX, int startY, bool hf, float d) : x(startX), y(startY), hasFood(hf), direction(d) {}
-
 static std::random_device rd;
 std::mt19937 gen(rd());
 std::uniform_real_distribution<float> dis(-45.0, 45.0);
 
-void Worker::lookForFood(Patch patches[][display_size]) {
+Worker::Worker(int startX, int startY, bool hf, float d) : x(startX), y(startY), hasFood(hf), direction(d) {
+    std::uniform_real_distribution<float> initialDis(0, 360.0);
+    direction = initialDis(gen);
+}
+
+void Worker::lookForFood(Patch patches[][DISPLAY_SIZE]) {
     Patch& currentPatch = patches[x][y];
 
     if (currentPatch.food > 0) {
@@ -23,7 +25,7 @@ void Worker::lookForFood(Patch patches[][display_size]) {
     }
 }
 
-void Worker::returnToNest(Patch patches[][display_size]) {
+void Worker::returnToNest(Patch patches[][DISPLAY_SIZE]) {
     Patch& currentPatch = patches[x][y];
     currentPatch.chemical += 1;
     if (currentPatch.nest) {
@@ -59,7 +61,7 @@ void Worker::sniff(Patch& currentPatch, bool lookingForFood) {
         // Calculate the angle towards the patch with max scent
         int deltaX = maxScentPatch->x - x;
         int deltaY = maxScentPatch->y - y;
-        float targetAngle = std::atan2(deltaY, deltaX) * 180.0 / pi;
+        float targetAngle = std::atan2(deltaY, deltaX) * 180.0 / PI;
         // Calculate the angle difference between the target angle and current direction
         float angleDifference = targetAngle - direction;
 
@@ -69,14 +71,14 @@ void Worker::sniff(Patch& currentPatch, bool lookingForFood) {
     }
 
     // Move the ant one pixel in the direction they face
-    float moveX = cos(direction * pi / 180.0) * 1.0;
-    float moveY = sin(direction * pi / 180.0) * 1.0;
+    float moveX = cos(direction * PI / 180.0) * 1.0;
+    float moveY = sin(direction * PI / 180.0) * 1.0;
 
     // Update ant's position while ensuring it stays within the display boundary
     int newX = x + static_cast<int>(std::round(moveX));
     int newY = y + static_cast<int>(std::round(moveY));
     // Check if the new position would take the ant off the map
-    if (newX < 0 || newX >= display_size || newY < 0 || newY >= display_size) {
+    if (newX < 0 || newX >= DISPLAY_SIZE || newY < 0 || newY >= DISPLAY_SIZE) {
         updateDirection(180);
     } else {
         // Update ant's position
